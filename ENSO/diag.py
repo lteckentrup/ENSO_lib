@@ -184,21 +184,23 @@ def find_events(index, operator, threshold, per=5, window=[-3, 3]):
         return ([], numpy.array([]))
 
     # Find the beginning (starts) and the end (ends) of events
-    jumps = numpy.where(numpy.diff(locs) > 1)[0]
-    starts = numpy.insert(locs[jumps+1], 0, locs[0])
-    ends = numpy.append(locs[jumps], locs[-1])
-
+    jumps =  np.where( np.diff(locs) > 1)[0]
+    starts_unfiltered =  np.insert(locs[jumps+1], 0, locs[0])
+    ends_unfiltered =  np.append(locs[jumps], locs[-1])
+    
     # Ignore the chunks that starts from the beginning or ends at the end of the
     # index
-    if starts[0] == 0:
-        starts = starts[1:]
-        ends = ends[1:]
-    if ends[-1] == len(index)-1:
-        starts = starts[:-1]
-        ends = ends[:-1]
-
-    # Chunks of the index that exceed the threshold
-    subsets = [index[starts[i]:ends[i]] for i in range(len(starts))]
+    if starts_unfiltered[0] == 0:
+        starts_unfiltered = starts_unfiltered[1:]
+        ends_unfiltered = ends_unfiltered[1:]
+    if ends_unfiltered[-1] == len(index)-1:
+        starts_unfiltered = starts_unfiltered[:-1]
+        ends_unfiltered = ends_unfiltered[:-1]
+        
+    ### Filter outliers where index exceeds thresholds but are not full event  
+    filter = np.where(np.greater_equal(end - start, per-1))[0]   
+    starts = starts_unfiltered[filter]
+    ends = ends_unfiltered[filter]
 
     # Find the location of peaks and apply persistence check
     pklocs = [starts[i]+argpeak_op(subsets[i])
